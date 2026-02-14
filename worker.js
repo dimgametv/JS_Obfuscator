@@ -1,39 +1,53 @@
 importScripts("https://cdn.jsdelivr.net/npm/javascript-obfuscator/dist/index.browser.js");
 
 self.onmessage = function(e) {
-    let code = e.data;
+    let { code, options } = e.data;
 
     try {
-        // Remove BOM
         code = code.replace(/^\uFEFF/, "");
 
         const isLarge = code.length > 500000;
 
-        const options = isLarge
-            ? {
-                compact: true,
-                stringArray: true,
-                rotateStringArray: true,
-                target: 'browser',
-                ignoreImports: true
-            }
-            : {
-                compact: true,
-                controlFlowFlattening: true,
-                deadCodeInjection: false,
-                stringArray: true,
-                stringArrayEncoding: ['base64'],
-                rotateStringArray: true,
-                selfDefending: false,
-                target: 'browser',
-                ignoreImports: true
-            };
+        let config = {
+            compact: true,
+            target: "browser",
+            ignoreImports: true
+        };
 
-        const result = JavaScriptObfuscator.obfuscate(code, options);
+        // Apply preset
+        if (options.preset === "medium") {
+            config.controlFlowFlattening = true;
+        }
+
+        if (options.preset === "heavy") {
+            config.controlFlowFlattening = true;
+            config.deadCodeInjection = true;
+        }
+
+        // Apply manual toggles
+        if (options.stringArray)
+            config.stringArray = true;
+
+        if (options.controlFlow)
+            config.controlFlowFlattening = true;
+
+        if (options.deadCode)
+            config.deadCodeInjection = true;
+
+        if (options.selfDefending)
+            config.selfDefending = true;
+
+        // Safety for large files
+        if (isLarge) {
+            config.deadCodeInjection = false;
+            config.selfDefending = false;
+        }
+
+        const result = JavaScriptObfuscator.obfuscate(code, config);
 
         self.postMessage(result.getObfuscatedCode());
 
     } catch (err) {
-        self.postMessage("Error during obfuscation: " + err.message);
+        self.postMessage("Error: " + err.message);
     }
 };
