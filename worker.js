@@ -27,6 +27,7 @@ const options = isLarge
         ignoreImports: true
     };
 
+let cleanedCode = code.replace(/^\uFEFF/, "");
 
         const result = JavaScriptObfuscator.obfuscate(code, options);
 
