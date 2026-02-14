@@ -6,6 +6,8 @@ self.onmessage = function(e) {
     try {
         code = code.replace(/^\uFEFF/, "");
 
+        const isHTML = /<script[\s\S]*?>[\s\S]*?<\/script>/gi.test(code);
+
         const isLarge = code.length > 500000;
 
         let config = {
@@ -14,7 +16,6 @@ self.onmessage = function(e) {
             ignoreImports: true
         };
 
-        // Apply preset
         if (options.preset === "medium") {
             config.controlFlowFlattening = true;
         }
@@ -24,7 +25,6 @@ self.onmessage = function(e) {
             config.deadCodeInjection = true;
         }
 
-        // Apply manual toggles
         if (options.stringArray)
             config.stringArray = true;
 
@@ -37,14 +37,38 @@ self.onmessage = function(e) {
         if (options.selfDefending)
             config.selfDefending = true;
 
-        // Safety for large files
         if (isLarge) {
             config.deadCodeInjection = false;
             config.selfDefending = false;
         }
 
-        const result = JavaScriptObfuscator.obfuscate(code, config);
+        // 🔥 If HTML, extract and replace scripts
+        if (isHTML) {
 
+            const updatedHTML = code.replace(
+                /<script(.*?)>([\s\S]*?)<\/script>/gi,
+                function(match, attributes, scriptContent) {
+
+                    // Skip external scripts
+                    if (/src\s*=/i.test(attributes)) {
+                        return match;
+                    }
+
+                    try {
+                        const result = JavaScriptObfuscator.obfuscate(scriptContent, config);
+                        return `<script${attributes}>${result.getObfuscatedCode()}</script>`;
+                    } catch {
+                        return match;
+                    }
+                }
+            );
+
+            self.postMessage(updatedHTML);
+            return;
+        }
+
+        // If pure JS
+        const result = JavaScriptObfuscator.obfuscate(code, config);
         self.postMessage(result.getObfuscatedCode());
 
     } catch (err) {
