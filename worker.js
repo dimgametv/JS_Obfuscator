@@ -1,12 +1,10 @@
 importScripts("https://cdn.jsdelivr.net/npm/javascript-obfuscator/dist/index.browser.js");
 
-self.onmessage = function(e) {
+self.onmessage = function (e) {
     let { code, options } = e.data;
 
     try {
         code = code.replace(/^\uFEFF/, "");
-
-        const isHTML = /<script[\s\S]*?>[\s\S]*?<\/script>/gi.test(code);
 
         const isLarge = code.length > 500000;
 
@@ -16,6 +14,7 @@ self.onmessage = function(e) {
             ignoreImports: true
         };
 
+        // Presets
         if (options.preset === "medium") {
             config.controlFlowFlattening = true;
         }
@@ -25,43 +24,47 @@ self.onmessage = function(e) {
             config.deadCodeInjection = true;
         }
 
-        if (options.stringArray)
-            config.stringArray = true;
+        // Manual toggles
+        if (options.stringArray) config.stringArray = true;
+        if (options.controlFlow) config.controlFlowFlattening = true;
+        if (options.deadCode) config.deadCodeInjection = true;
+        if (options.selfDefending) config.selfDefending = true;
 
-        if (options.controlFlow)
-            config.controlFlowFlattening = true;
-
-        if (options.deadCode)
-            config.deadCodeInjection = true;
-
-        if (options.selfDefending)
-            config.selfDefending = true;
-
+        // Large file safety
         if (isLarge) {
             config.deadCodeInjection = false;
             config.selfDefending = false;
         }
 
-        // 🔥 If HTML, extract and replace scripts
-        if (isHTML) {
+        // Detect script blocks
+        const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 
-            const updatedHTML = code.replace(
-                /<script(.*?)>([\s\S]*?)<\/script>/gi,
-                function(match, attributes, scriptContent) {
+        if (scriptRegex.test(code)) {
 
-                    // Skip external scripts
-                    if (/src\s*=/i.test(attributes)) {
-                        return match;
-                    }
+            const updatedHTML = code.replace(scriptRegex, function (match, attributes, content) {
 
-                    try {
-                        const result = JavaScriptObfuscator.obfuscate(scriptContent, config);
-                        return `<script${attributes}>${result.getObfuscatedCode()}</script>`;
-                    } catch {
-                        return match;
-                    }
+                // Skip external scripts
+                if (/src\s*=/i.test(attributes)) {
+                    return match;
                 }
-            );
+
+                // Skip JSON or non-JS types
+                if (/type\s*=\s*["']?(application\/json|application\/ld\+json)/i.test(attributes)) {
+                    return match;
+                }
+
+                // Skip empty scripts
+                if (!content.trim()) {
+                    return match;
+                }
+
+                try {
+                    const result = JavaScriptObfuscator.obfuscate(content, config);
+                    return `<script${attributes}>${result.getObfuscatedCode()}</script>`;
+                } catch {
+                    return match;
+                }
+            });
 
             self.postMessage(updatedHTML);
             return;
