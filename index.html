@@ -3,142 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JS Obfuscator Pro</title>
-
+<title>JS Fortress Obfuscator</title>
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: linear-gradient(135deg,#141e30,#243b55);
-    color: white;
-}
+    :root { --primary: #00cec9; --bg: #1e2028; --panel: #2d3436; --text: #dfe6e9; }
+    body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    header { padding: 15px 20px; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(10px); }
+    header h1 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; color: var(--primary); }
+    
+    .main-layout { display: flex; flex: 1; overflow: hidden; }
+    
+    /* Sidebar Controls */
+    .sidebar { width: 320px; background: rgba(0,0,0,0.2); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; overflow-y: auto; }
+    .control-group { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .control-group h3 { margin: 0 0 15px 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #74b9ff; opacity: 0.8; }
+    
+    /* Inputs & Selects */
+    select, input[type="text"] { width: 100%; background: var(--bg); border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; outline: none; transition: 0.2s; box-sizing: border-box; }
+    select:focus, input[type="text"]:focus { border-color: var(--primary); }
+    
+    /* Toggles */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; }
+    .toggle-switch { position: relative; width: 40px; height: 20px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #636e72; transition: .4s; border-radius: 20px; }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
 
-header {
-    padding: 15px;
-    text-align: center;
-    font-size: 22px;
-    font-weight: bold;
-}
+    /* Action Buttons */
+    .actions { padding: 20px; margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+    button { border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+    .btn-obfuscate { background: var(--primary); color: #000; box-shadow: 0 4px 15px rgba(0, 206, 201, 0.3); }
+    .btn-obfuscate:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 206, 201, 0.4); }
+    .btn-download { background: #2d3436; color: white; border: 1px solid #444; }
+    .btn-download:hover { background: #b2bec3; color: #000; }
 
-.controls {
-    padding: 15px;
-    background: rgba(0,0,0,0.3);
-}
-
-textarea {
-    width: 100%;
-    height: 200px;
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 8px;
-    border: none;
-    font-family: monospace;
-}
-
-button {
-    padding: 10px 20px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.option-group {
-    margin-top: 10px;
-}
-
-.loading {
-    display: none;
-    margin-top: 10px;
-    color: #00ffcc;
-}
+    /* Editor Area */
+    .editor-container { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; position: relative; }
+    .code-box { position: relative; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.05); }
+    .box-header { padding: 10px 15px; background: rgba(0,0,0,0.3); font-size: 0.8rem; color: #aaa; display: flex; justify-content: space-between; }
+    textarea { flex: 1; background: #12141a; border: none; color: #a29bfe; padding: 15px; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.5; resize: none; outline: none; }
+    textarea::placeholder { color: #444; }
+    
+    #loadingOverlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 10; flex-direction: column; }
+    .spinner { width: 40px; height: 40px; border: 4px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<header>🚀 JS Obfuscator Pro</header>
+<header>
+    <h1>🛡️ JS Fortress <span style="font-size:0.8rem; opacity:0.6; margin-left:10px;">PRO EDITION</span></h1>
+    <div style="font-size:0.8rem; color:#aaa;">Status: <span id="workerStatus" style="color:var(--primary)">Ready</span></div>
+</header>
 
-<div class="controls">
+<div class="main-layout">
+    <div class="sidebar">
+        
+        <div class="control-group">
+            <h3>📂 Input Source</h3>
+            <input type="file" id="fileInput" accept=".js,.html,.htm">
+        </div>
 
-<input type="file" id="fileInput" accept=".js">
+        <div class="control-group">
+            <h3>⚙️ Core Strength</h3>
+            <select id="preset">
+                <option value="high">High (Recommended)</option>
+                <option value="extreme">Extreme (Slowest, Max Security)</option>
+                <option value="custom">Custom Configuration</option>
+            </select>
+        </div>
 
-<div class="option-group">
-    <label>Preset Mode:</label>
-    <select id="preset">
-        <option value="light">Light (Fast)</option>
-        <option value="medium">Medium</option>
-        <option value="heavy">Heavy (Max Protection)</option>
-    </select>
-</div>
+        <div class="control-group">
+            <h3>🔒 Security Layers</h3>
+            
+            <div class="toggle-row">
+                <span>Variables Renaming</span>
+                <label class="toggle-switch"><input type="checkbox" id="renameVars" checked><span class="slider"></span></label>
+            </div>
+            
+            <div class="toggle-row">
+                <span>String Encryption (RC4)</span>
+                <label class="toggle-switch"><input type="checkbox" id="stringArray" checked><span class="slider"></span></label>
+            </div>
 
-<div class="option-group">
-    <label><input type="checkbox" id="stringArray" checked> Encode Strings</label><br>
-    <label><input type="checkbox" id="controlFlow"> Control Flow Flattening</label><br>
-    <label><input type="checkbox" id="deadCode"> Dead Code Injection</label><br>
-    <label><input type="checkbox" id="selfDefending"> Self Defending</label>
-</div>
+            <div class="toggle-row">
+                <span>Control Flow Flattening</span>
+                <label class="toggle-switch"><input type="checkbox" id="controlFlow" checked><span class="slider"></span></label>
+            </div>
 
-<button onclick="startObfuscation()">Obfuscate</button>
+            <div class="toggle-row">
+                <span>Dead Code Injection</span>
+                <label class="toggle-switch"><input type="checkbox" id="deadCode" checked><span class="slider"></span></label>
+            </div>
 
-<div class="loading" id="loading">Processing... ⏳</div>
+            <div class="toggle-row">
+                <span>Hide Numbers (Math)</span>
+                <label class="toggle-switch"><input type="checkbox" id="mathHiding"><span class="slider"></span></label>
+            </div>
+        </div>
 
-<textarea id="input" placeholder="Paste JS code here..."></textarea>
-<textarea id="output" placeholder="Obfuscated output..."></textarea>
+        <div class="control-group">
+            <h3>🛡️ Anti-Tamper</h3>
+            
+            <div class="toggle-row">
+                <span>Self Defending</span>
+                <label class="toggle-switch"><input type="checkbox" id="selfDefending" checked><span class="slider"></span></label>
+            </div>
 
-<button onclick="downloadFile()">Download Result</button>
+            <div class="toggle-row">
+                <span>Anti-Debug (Console Freeze)</span>
+                <label class="toggle-switch"><input type="checkbox" id="debugProtection" checked><span class="slider"></span></label>
+            </div>
 
+            <div class="toggle-row">
+                <span>Disable Console.log</span>
+                <label class="toggle-switch"><input type="checkbox" id="disableConsole" checked><span class="slider"></span></label>
+            </div>
+
+            <div style="margin-top:15px;">
+                <span style="font-size:0.8rem; color:#aaa;">Domain Lock (Optional):</span>
+                <input type="text" id="domainLock" placeholder="example.com, myapp.net" style="margin-top:5px;">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn-obfuscate" onclick="runObfuscation()">🔒 Encrypt Code</button>
+            <button class="btn-download" onclick="downloadCode()">💾 Save File</button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="code-box">
+            <div class="box-header"><span>INPUT (JavaScript / HTML)</span> <span id="inSize">0 KB</span></div>
+            <textarea id="input" spellcheck="false" placeholder="// Paste your source code here..."></textarea>
+        </div>
+        <div class="code-box">
+            <div class="box-header"><span>OBFUSCATED OUTPUT</span> <span id="outSize">0 KB</span></div>
+            <textarea id="output" spellcheck="false" placeholder="// The fortress awaits..." readonly style="color:#00cec9;"></textarea>
+        </div>
+        
+        <div id="loadingOverlay">
+            <div class="spinner"></div>
+            <div style="color:white; font-weight:bold;">Applying Protection Layers...</div>
+        </div>
+    </div>
 </div>
 
 <script>
-const worker = new Worker("worker.js");
-
-const inputArea = document.getElementById("input");
-const outputArea = document.getElementById("output");
-const loading = document.getElementById("loading");
-
-document.getElementById("fileInput").addEventListener("change", function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        inputArea.value = event.target.result;
+    const worker = new Worker("worker.js");
+    const dom = {
+        input: document.getElementById('input'),
+        output: document.getElementById('output'),
+        loader: document.getElementById('loadingOverlay'),
+        inSize: document.getElementById('inSize'),
+        outSize: document.getElementById('outSize')
     };
-    reader.readAsText(file);
-});
 
-function startObfuscation() {
-    const code = inputArea.value;
-    if (!code.trim()) {
-        alert("Provide JS code first.");
-        return;
+    // File Loading
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            dom.input.value = e.target.result; 
+            updateSize(); 
+        };
+        reader.readAsText(file);
+    });
+
+    // Update Size Labels
+    function updateSize() {
+        const inBytes = new Blob([dom.input.value]).size;
+        dom.inSize.textContent = (inBytes / 1024).toFixed(2) + ' KB';
+    }
+    dom.input.addEventListener('input', updateSize);
+
+    // Run
+    function runObfuscation() {
+        if (!dom.input.value.trim()) return alert("Please enter some code first!");
+        
+        dom.loader.style.display = "flex";
+        dom.output.value = "";
+
+        const config = {
+            preset: document.getElementById('preset').value,
+            renameVars: document.getElementById('renameVars').checked,
+            stringArray: document.getElementById('stringArray').checked,
+            controlFlow: document.getElementById('controlFlow').checked,
+            deadCode: document.getElementById('deadCode').checked,
+            mathHiding: document.getElementById('mathHiding').checked,
+            selfDefending: document.getElementById('selfDefending').checked,
+            debugProtection: document.getElementById('debugProtection').checked,
+            disableConsole: document.getElementById('disableConsole').checked,
+            domainLock: document.getElementById('domainLock').value
+        };
+
+        worker.postMessage({
+            code: dom.input.value,
+            options: config
+        });
     }
 
-    loading.style.display = "block";
-
-    const options = {
-        preset: document.getElementById("preset").value,
-        stringArray: document.getElementById("stringArray").checked,
-        controlFlow: document.getElementById("controlFlow").checked,
-        deadCode: document.getElementById("deadCode").checked,
-        selfDefending: document.getElementById("selfDefending").checked
+    // Worker Listener
+    worker.onmessage = function(e) {
+        dom.loader.style.display = "none";
+        if (e.data.error) {
+            alert("Error: " + e.data.error);
+        } else {
+            dom.output.value = e.data.result;
+            const outBytes = new Blob([e.data.result]).size;
+            dom.outSize.textContent = (outBytes / 1024).toFixed(2) + ' KB';
+        }
     };
 
-    worker.postMessage({ code, options });
-}
-
-worker.onmessage = function(e) {
-    loading.style.display = "none";
-    outputArea.value = e.data;
-};
-
-function downloadFile() {
-    const blob = new Blob([outputArea.value], { type: "text/javascript" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "obfuscated.js";
-    a.click();
-}
+    // Download
+    function downloadCode() {
+        if (!dom.output.value) return;
+        const blob = new Blob([dom.output.value], {type: 'text/javascript'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'secure-code.js';
+        a.click();
+    }
 </script>
 
 </body>
