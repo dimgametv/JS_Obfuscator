@@ -8,12 +8,9 @@
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    font-family: Arial;
+    background: linear-gradient(135deg,#141e30,#243b55);
     color: white;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
 }
 
 header {
@@ -21,95 +18,91 @@ header {
     text-align: center;
     font-size: 22px;
     font-weight: bold;
-    background: rgba(0,0,0,0.3);
-}
-
-.container {
-    flex: 1;
-    display: flex;
-    padding: 15px;
-    gap: 15px;
-}
-
-textarea {
-    flex: 1;
-    padding: 15px;
-    border-radius: 10px;
-    border: none;
-    resize: none;
-    font-family: monospace;
-    font-size: 14px;
-}
-
-#input {
-    background: #111;
-    color: #00ffcc;
-}
-
-#output {
-    background: #000;
-    color: #00ff99;
 }
 
 .controls {
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+}
+
+textarea {
+    width: 100%;
+    height: 200px;
+    margin-top: 10px;
     padding: 10px;
-    text-align: center;
+    border-radius: 8px;
+    border: none;
+    font-family: monospace;
 }
 
 button {
     padding: 10px 20px;
+    margin-top: 10px;
     border: none;
-    border-radius: 8px;
-    margin: 5px;
+    border-radius: 6px;
     font-weight: bold;
     cursor: pointer;
 }
 
-.obfuscate {
-    background: #00ffcc;
-}
-
-.download {
-    background: #ffcc00;
+.option-group {
+    margin-top: 10px;
 }
 
 .loading {
     display: none;
     margin-top: 10px;
+    color: #00ffcc;
 }
 </style>
 </head>
 <body>
 
-<header>🚀 JS Obfuscator Pro (Large File Ready)</header>
+<header>🚀 JS Obfuscator Pro</header>
 
 <div class="controls">
-    <input type="file" id="fileInput" accept=".js">
-    <button class="obfuscate" onclick="startObfuscation()">Obfuscate</button>
-    <button class="download" onclick="downloadFile()">Download</button>
-    <div class="loading" id="loading">Processing... Please wait ⏳</div>
+
+<input type="file" id="fileInput" accept=".js">
+
+<div class="option-group">
+    <label>Preset Mode:</label>
+    <select id="preset">
+        <option value="light">Light (Fast)</option>
+        <option value="medium">Medium</option>
+        <option value="heavy">Heavy (Max Protection)</option>
+    </select>
 </div>
 
-<div class="container">
-    <textarea id="input" placeholder="Paste your JS code here..."></textarea>
-    <textarea id="output" placeholder="Obfuscated code will appear here..."></textarea>
+<div class="option-group">
+    <label><input type="checkbox" id="stringArray" checked> Encode Strings</label><br>
+    <label><input type="checkbox" id="controlFlow"> Control Flow Flattening</label><br>
+    <label><input type="checkbox" id="deadCode"> Dead Code Injection</label><br>
+    <label><input type="checkbox" id="selfDefending"> Self Defending</label>
+</div>
+
+<button onclick="startObfuscation()">Obfuscate</button>
+
+<div class="loading" id="loading">Processing... ⏳</div>
+
+<textarea id="input" placeholder="Paste JS code here..."></textarea>
+<textarea id="output" placeholder="Obfuscated output..."></textarea>
+
+<button onclick="downloadFile()">Download Result</button>
+
 </div>
 
 <script>
 const worker = new Worker("worker.js");
 
-const fileInput = document.getElementById("fileInput");
 const inputArea = document.getElementById("input");
 const outputArea = document.getElementById("output");
 const loading = document.getElementById("loading");
 
-fileInput.addEventListener("change", function() {
-    const file = fileInput.files[0];
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onload = function(e) {
-        inputArea.value = e.target.result;
+    reader.onload = function(event) {
+        inputArea.value = event.target.result;
     };
     reader.readAsText(file);
 });
@@ -117,12 +110,21 @@ fileInput.addEventListener("change", function() {
 function startObfuscation() {
     const code = inputArea.value;
     if (!code.trim()) {
-        alert("Please provide JavaScript code.");
+        alert("Provide JS code first.");
         return;
     }
 
     loading.style.display = "block";
-    worker.postMessage(code);
+
+    const options = {
+        preset: document.getElementById("preset").value,
+        stringArray: document.getElementById("stringArray").checked,
+        controlFlow: document.getElementById("controlFlow").checked,
+        deadCode: document.getElementById("deadCode").checked,
+        selfDefending: document.getElementById("selfDefending").checked
+    };
+
+    worker.postMessage({ code, options });
 }
 
 worker.onmessage = function(e) {
