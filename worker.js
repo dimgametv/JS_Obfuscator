@@ -5,23 +5,28 @@ self.onmessage = function(e) {
 
     try {
 
-        const isLarge = code.length > 500000; // ~500KB
+       const isLarge = code.length > 500000;
 
-        const options = isLarge
-            ? {
-                compact: true,
-                stringArray: true,
-                rotateStringArray: true
-            }
-            : {
-                compact: true,
-                controlFlowFlattening: true,
-                deadCodeInjection: true,
-                stringArray: true,
-                stringArrayEncoding: ['base64'],
-                rotateStringArray: true,
-                selfDefending: true
-            };
+const options = isLarge
+    ? {
+        compact: true,
+        stringArray: true,
+        rotateStringArray: true,
+        target: 'browser',
+        ignoreImports: true
+    }
+    : {
+        compact: true,
+        controlFlowFlattening: true,
+        deadCodeInjection: true,
+        stringArray: true,
+        stringArrayEncoding: ['base64'],
+        rotateStringArray: true,
+        selfDefending: true,
+        target: 'browser',
+        ignoreImports: true
+    };
+
 
         const result = JavaScriptObfuscator.obfuscate(code, options);
 
