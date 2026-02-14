@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Obfuscator Pro</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+header {
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.3);
+}
+
+.container {
+    flex: 1;
+    display: flex;
+    padding: 15px;
+    gap: 15px;
+}
+
+textarea {
+    flex: 1;
+    padding: 15px;
+    border-radius: 10px;
+    border: none;
+    resize: none;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+#input {
+    background: #111;
+    color: #00ffcc;
+}
+
+#output {
+    background: #000;
+    color: #00ff99;
+}
+
+.controls {
+    padding: 10px;
+    text-align: center;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    margin: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.obfuscate {
+    background: #00ffcc;
+}
+
+.download {
+    background: #ffcc00;
+}
+
+.loading {
+    display: none;
+    margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<header>🚀 JS Obfuscator Pro (Large File Ready)</header>
+
+<div class="controls">
+    <input type="file" id="fileInput" accept=".js">
+    <button class="obfuscate" onclick="startObfuscation()">Obfuscate</button>
+    <button class="download" onclick="downloadFile()">Download</button>
+    <div class="loading" id="loading">Processing... Please wait ⏳</div>
+</div>
+
+<div class="container">
+    <textarea id="input" placeholder="Paste your JS code here..."></textarea>
+    <textarea id="output" placeholder="Obfuscated code will appear here..."></textarea>
+</div>
+
+<script>
+const worker = new Worker("worker.js");
+
+const fileInput = document.getElementById("fileInput");
+const inputArea = document.getElementById("input");
+const outputArea = document.getElementById("output");
+const loading = document.getElementById("loading");
+
+fileInput.addEventListener("change", function() {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        inputArea.value = e.target.result;
+    };
+    reader.readAsText(file);
+});
+
+function startObfuscation() {
+    const code = inputArea.value;
+    if (!code.trim()) {
+        alert("Please provide JavaScript code.");
+        return;
+    }
+
+    loading.style.display = "block";
+    worker.postMessage(code);
+}
+
+worker.onmessage = function(e) {
+    loading.style.display = "none";
+    outputArea.value = e.data;
+};
+
+function downloadFile() {
+    const blob = new Blob([outputArea.value], { type: "text/javascript" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "obfuscated.js";
+    a.click();
+}
+</script>
+
+</body>
+</html>
