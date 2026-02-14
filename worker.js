@@ -32,21 +32,22 @@ self.onmessage = function (e) {
             if (preset === "heavy") {
                 config.controlFlowFlattening = true;
                 config.controlFlowFlatteningThreshold = 1;
+
+                // 🔐 FULL ANTI-TAMPER SETTINGS
                 config.deadCodeInjection = true;
                 config.deadCodeInjectionThreshold = 0.4;
-                config.selfDefending = true;
-                config.disableConsoleOutput = true;
-                config.debugProtection = true;
-                config.debugProtectionInterval = 4000;
+
+                config.selfDefending = true;              // Anti-modification
+                config.debugProtection = true;            // DevTools detection
+                config.debugProtectionInterval = 4000;    // Re-check every 4s
+                config.disableConsoleOutput = true;       // Disable console
+
+                config.transformObjectKeys = true;
+                config.stringArrayRotate = true;
+                config.stringArrayShuffle = true;
             }
 
-            // Manual toggle overrides (like desktop flexibility)
-            if (options.stringArray === false) config.stringArray = false;
-            if (options.controlFlow) config.controlFlowFlattening = true;
-            if (options.deadCode) config.deadCodeInjection = true;
-            if (options.selfDefending) config.selfDefending = true;
-
-            // Large file protection (same as desktop)
+            // Large file safety (same logic as desktop)
             if (isLarge) {
                 config.deadCodeInjection = false;
                 config.selfDefending = false;
@@ -64,10 +65,8 @@ self.onmessage = function (e) {
 
             const updatedHTML = code.replace(scriptRegex, (match, attributes, content) => {
 
-                // Skip external scripts
                 if (/src\s*=/i.test(attributes)) return match;
 
-                // Skip JSON scripts
                 if (/type\s*=\s*["']?(application\/json|application\/ld\+json)/i.test(attributes))
                     return match;
 
