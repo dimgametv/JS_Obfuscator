@@ -9,15 +9,20 @@ self.onmessage = function (e) {
         const isLarge = code.length > 500000;
 
         function getConfig(preset) {
-
             let config = {
                 compact: true,
                 target: "browser",
                 ignoreImports: true,
+
+                // 🔑 Semantic gap protection
+                renameGlobals: true,
+                transformObjectKeys: true,
                 stringArray: true,
                 stringArrayEncoding: ["base64"],
                 stringArrayThreshold: 0.75,
-                renameGlobals: false,
+                stringArrayRotate: true,
+                stringArrayShuffle: true,
+
                 simplify: true,
                 numbersToExpressions: true,
                 splitStrings: true,
@@ -26,28 +31,23 @@ self.onmessage = function (e) {
 
             if (preset === "medium") {
                 config.controlFlowFlattening = true;
-                config.controlFlowFlatteningThreshold = 0.5;
+                config.controlFlowFlatteningThreshold = 0.75;
             }
 
             if (preset === "heavy") {
                 config.controlFlowFlattening = true;
                 config.controlFlowFlatteningThreshold = 1;
 
-                // 🔐 FULL ANTI-TAMPER SETTINGS
                 config.deadCodeInjection = true;
                 config.deadCodeInjectionThreshold = 0.4;
 
-                config.selfDefending = true;              // Anti-modification
-                config.debugProtection = true;            // DevTools detection
-                config.debugProtectionInterval = 4000;    // Re-check every 4s
-                config.disableConsoleOutput = true;       // Disable console
-
-                config.transformObjectKeys = true;
-                config.stringArrayRotate = true;
-                config.stringArrayShuffle = true;
+                // 🔐 Full anti-tamper protection
+                config.selfDefending = true;
+                config.debugProtection = true;
+                config.debugProtectionInterval = 4000;
+                config.disableConsoleOutput = true;
             }
 
-            // Large file safety (same logic as desktop)
             if (isLarge) {
                 config.deadCodeInjection = false;
                 config.selfDefending = false;
@@ -66,10 +66,8 @@ self.onmessage = function (e) {
             const updatedHTML = code.replace(scriptRegex, (match, attributes, content) => {
 
                 if (/src\s*=/i.test(attributes)) return match;
-
                 if (/type\s*=\s*["']?(application\/json|application\/ld\+json)/i.test(attributes))
                     return match;
-
                 if (!content.trim()) return match;
 
                 try {
@@ -81,14 +79,12 @@ self.onmessage = function (e) {
             });
 
             self.postMessage(updatedHTML);
-        }
-        else {
+        } else {
             const result = JavaScriptObfuscator.obfuscate(code, config);
             self.postMessage(result.getObfuscatedCode());
         }
 
-    }
-    catch (err) {
+    } catch (err) {
         self.postMessage("Error: " + err.message);
     }
 };
