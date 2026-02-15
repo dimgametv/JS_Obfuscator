@@ -1,30 +1,22 @@
 importScripts("https://cdn.jsdelivr.net/npm/javascript-obfuscator/dist/index.browser.js");
-
-self.onmessage = function (e) {
-    // 1. Get the data
+self.onmessage = function(e) {
     let { code, options } = e.data;
-
     try {
-        // Remove BOM if present
         code = code.replace(/^\uFEFF/, "");
         const isLarge = code.length > 500000;
-
-        // --- HELPER FUNCTIONS ---
-
         function extractHTMLEventFunctions(htmlCode) {
             const funcNames = new Set();
-            // Match onclick="funcName()", etc.
             const eventPattern = /\bon\w+\s*=\s*["']?\s*([a-zA-Z_$][\w$]*)\s*\(/gi;
             let match;
-            while ((match = eventPattern.exec(htmlCode)) !== null) funcNames.add(match[1]);
-            
-            // Match href="javascript:funcName()"
+            while ((match = eventPattern.exec(htmlCode)) !== null) {
+                funcNames.add(match[1]);
+            }
             const hrefPattern = /href\s*=\s*["']javascript:\s*([a-zA-Z_$][\w$]*)\s*\(/gi;
-            while ((match = hrefPattern.exec(htmlCode)) !== null) funcNames.add(match[1]);
-            
+            while ((match = hrefPattern.exec(htmlCode)) !== null) {
+                funcNames.add(match[1]);
+            }
             return Array.from(funcNames);
         }
-
         function extractElementIds(jsCode) {
             const ids = new Set();
             const patterns = [
@@ -35,19 +27,18 @@ self.onmessage = function (e) {
             ];
             for (const pattern of patterns) {
                 let match;
-                while ((match = pattern.exec(jsCode)) !== null) ids.add(match[1]);
+                while ((match = pattern.exec(jsCode)) !== null) {
+                    ids.add(match[1]);
+                }
             }
             return Array.from(ids);
         }
-
         function escapeRegex(str) {
             return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
         }
-
-        function getConfig(preset, fullCode, isHTML) {
+        function getConfig(opts, fullCode, isHTML) {
             const htmlFunctions = isHTML ? extractHTMLEventFunctions(fullCode) : [];
             const elementIds = extractElementIds(fullCode);
-            
             let config = {
                 compact: true,
                 target: "browser",
@@ -55,95 +46,93 @@ self.onmessage = function (e) {
                 renameGlobals: false,
                 transformObjectKeys: false,
                 splitStrings: false,
-                
-                // Obfuscation Settings
-                stringArray: true,
-                stringArrayEncoding: ['base64'], // Correct format
-                stringArrayThreshold: 0.75,
-                stringArrayRotate: true,
-                stringArrayShuffle: true,
-                stringArrayIndexShift: true,
+                stringArray: opts.stringArray !== false,
+                stringArrayEncoding: opts.stringArray ? ["base64"] : [],
+                stringArrayThreshold: opts.stringArray ? 0.75 : 0,
+                stringArrayRotate: opts.stringArray,
+                stringArrayShuffle: opts.stringArray,
+                stringArrayIndexShift: opts.stringArray,
                 simplify: true,
                 numbersToExpressions: true,
                 identifierNamesGenerator: "hexadecimal",
-
-                // Protection (Preserve Names)
                 reservedNames: [
                     ...htmlFunctions,
-                    "^on.*", "^handle.*", "^init.*", "^render.*", 
-                    "^update.*", "^toggle.*", "^show.*", "^hide.*", 
-                    "^set.*", "^get.*"
+                    "^on.*",
+                    "^handle.*",
+                    "^init.*",
+                    "^render.*",
+                    "^update.*",
+                    "^toggle.*",
+                    "^show.*",
+                    "^hide.*",
+                    "^set.*",
+                    "^get.*",
                 ],
                 reservedStrings: elementIds.map(id => escapeRegex(id)),
             };
-
-            if (preset === "medium") {
+            if (opts.controlFlow) {
                 config.controlFlowFlattening = true;
                 config.controlFlowFlatteningThreshold = 0.5;
             }
-
-            if (preset === "heavy") {
-                config.controlFlowFlattening = true;
-                config.controlFlowFlatteningThreshold = 0.75;
+            if (opts.deadCode) {
                 config.deadCodeInjection = true;
                 config.deadCodeInjectionThreshold = 0.3;
-                
-                if (options.selfDefending) config.selfDefending = true;
-                // Note: debugProtection can cause loops in some browsers, use with caution
-                if (options.debugProtection) config.debugProtection = false; 
             }
-
+            if (opts.selfDefending) {
+                config.selfDefending = true;
+            }
             if (isLarge) {
                 config.deadCodeInjection = false;
                 config.selfDefending = false;
                 config.controlFlowFlatteningThreshold = 0.3;
             }
-
             return config;
         }
-
-        // --- MAIN LOGIC ---
-
         const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
         const isHTML = scriptRegex.test(code);
-        scriptRegex.lastIndex = 0; // Reset regex
-
+        scriptRegex.lastIndex = 0;
         if (isHTML) {
-            // HTML MODE
-            const config = getConfig(options.preset, code, true);
-            
+            const config = getConfig(options, code, true);
             const updatedHTML = code.replace(scriptRegex, (match, attributes, content) => {
                 if (/src\s*=/i.test(attributes)) return match;
-                if (/type\s*=\s*["']?(application\/json|text\/template)/i.test(attributes)) return match;
+                if (/type\s*=\s*["']?(application\/json|application\/ld\+json|text\/template|text\/html)/i.test(attributes)) {
+                    return match;
+                }
                 if (!content.trim()) return match;
-
                 try {
-                    // Extract local function names to prevent renaming them if they are used in HTML
-                    // (Simplified logic for performance)
+                    const definedFunctions = [];
+                    const funcDeclare = /function\s+([a-zA-Z_$][\w$]*)\s*\(/g;
+                    let m;
+                    while ((m = funcDeclare.exec(content)) !== null) {
+                        definedFunctions.push(m[1]);
+                    }
+                    const funcExpr = /(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function|\([^)]*\)\s*=>|[a-zA-Z_$][\w$]*\s*=>)/g;
+                    while ((m = funcExpr.exec(content)) !== null) {
+                        definedFunctions.push(m[1]);
+                    }
+                    const htmlWithoutScripts = code.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+                    const usedInHTML = definedFunctions.filter(fn => {
+                        const pattern = new RegExp('\\b' + fn + '\\s*\\(', 'g');
+                        return pattern.test(htmlWithoutScripts);
+                    });
                     const scriptConfig = { ...config };
-                    
+                    scriptConfig.reservedNames = [
+                        ...(config.reservedNames || []),
+                        ...usedInHTML
+                    ];
                     const result = JavaScriptObfuscator.obfuscate(content, scriptConfig);
                     return `<script${attributes}>${result.getObfuscatedCode()}</script>`;
                 } catch (err) {
-                    // THROW error so the main catch block handles it
-                    throw new Error("Failed to obfuscate script tag: " + err.message);
+                    return match;
                 }
             });
-
-            // FIXED: Send JUST the code string
-            self.postMessage(updatedHTML);
-
+            self.postMessage({ success: true, code: updatedHTML });
         } else {
-            // JS MODE
-            const config = getConfig(options.preset, code, false);
+            const config = getConfig(options, code, false);
             const result = JavaScriptObfuscator.obfuscate(code, config);
-            
-            // FIXED: Send JUST the code string
-            self.postMessage(result.getObfuscatedCode());
+            self.postMessage({ success: true, code: result.getObfuscatedCode() });
         }
-
     } catch (err) {
-        // FIXED: Send error as a string starting with "Error:"
-        self.postMessage("Error: " + err.message);
+        self.postMessage({ success: false, error: "Error: " + err.message });
     }
 };
