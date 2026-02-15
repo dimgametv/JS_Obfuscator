@@ -1,55 +1,50 @@
 importScripts("https://cdn.jsdelivr.net/npm/javascript-obfuscator/dist/index.browser.js");
 
 self.onmessage = function (e) {
+    // 1. Get the data
     let { code, options } = e.data;
 
     try {
+        // Remove BOM if present
         code = code.replace(/^\uFEFF/, "");
         const isLarge = code.length > 500000;
 
-        // 🔧 Extract function names used in HTML event handlers
+        // --- HELPER FUNCTIONS ---
+
         function extractHTMLEventFunctions(htmlCode) {
             const funcNames = new Set();
-            
-            // Match onclick="funcName()", onchange="funcName()", etc.
+            // Match onclick="funcName()", etc.
             const eventPattern = /\bon\w+\s*=\s*["']?\s*([a-zA-Z_$][\w$]*)\s*\(/gi;
             let match;
-            while ((match = eventPattern.exec(htmlCode)) !== null) {
-                funcNames.add(match[1]);
-            }
+            while ((match = eventPattern.exec(htmlCode)) !== null) funcNames.add(match[1]);
             
             // Match href="javascript:funcName()"
             const hrefPattern = /href\s*=\s*["']javascript:\s*([a-zA-Z_$][\w$]*)\s*\(/gi;
-            while ((match = hrefPattern.exec(htmlCode)) !== null) {
-                funcNames.add(match[1]);
-            }
+            while ((match = hrefPattern.exec(htmlCode)) !== null) funcNames.add(match[1]);
             
             return Array.from(funcNames);
         }
 
-        // 🔧 Extract element IDs used in JavaScript
         function extractElementIds(jsCode) {
             const ids = new Set();
-            
             const patterns = [
                 /getElementById\s*\(\s*["']([^"']+)["']\s*\)/gi,
                 /querySelector\s*\(\s*["']#([^"'\s\[>]+)["']\s*\)/gi,
                 /getElementsByClassName\s*\(\s*["']([^"']+)["']\s*\)/gi,
                 /querySelector(?:All)?\s*\(\s*["']\.([^"'\s\[>]+)["']\s*\)/gi,
             ];
-            
             for (const pattern of patterns) {
                 let match;
-                while ((match = pattern.exec(jsCode)) !== null) {
-                    ids.add(match[1]);
-                }
+                while ((match = pattern.exec(jsCode)) !== null) ids.add(match[1]);
             }
-            
             return Array.from(ids);
         }
 
+        function escapeRegex(str) {
+            return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        }
+
         function getConfig(preset, fullCode, isHTML) {
-            // Extract identifiers to preserve
             const htmlFunctions = isHTML ? extractHTMLEventFunctions(fullCode) : [];
             const elementIds = extractElementIds(fullCode);
             
@@ -57,152 +52,98 @@ self.onmessage = function (e) {
                 compact: true,
                 target: "browser",
                 ignoreImports: true,
-
-                // 🔧 FIXED: Disable dangerous options
-                renameGlobals: false,        // ❌ Was breaking onclick handlers
-                transformObjectKeys: false,  // ❌ Was breaking DOM properties
-                splitStrings: false,         // ❌ Was breaking selectors
-
-                // ✅ Safe string obfuscation
+                renameGlobals: false,
+                transformObjectKeys: false,
+                splitStrings: false,
+                
+                // Obfuscation Settings
                 stringArray: true,
-                stringArrayEncoding: ["base64"],
+                stringArrayEncoding: ['base64'], // Correct format
                 stringArrayThreshold: 0.75,
                 stringArrayRotate: true,
                 stringArrayShuffle: true,
                 stringArrayIndexShift: true,
-
-                // ✅ Safe transformations
                 simplify: true,
                 numbersToExpressions: true,
                 identifierNamesGenerator: "hexadecimal",
 
-                // 🔧 Preserve HTML-referenced functions
+                // Protection (Preserve Names)
                 reservedNames: [
                     ...htmlFunctions,
-                    "^on.*",           // Event handler naming convention
-                    "^handle.*",       // Common handler prefix
-                    "^init.*",         // Initialization functions
-                    "^render.*",       // Render functions
-                    "^update.*",       // Update functions
-                    "^toggle.*",       // Toggle functions
-                    "^show.*",         // Show functions
-                    "^hide.*",         // Hide functions
-                    "^set.*",          // Setter functions
-                    "^get.*",          // Getter functions
+                    "^on.*", "^handle.*", "^init.*", "^render.*", 
+                    "^update.*", "^toggle.*", "^show.*", "^hide.*", 
+                    "^set.*", "^get.*"
                 ],
-
-                // 🔧 Preserve DOM selectors
                 reservedStrings: elementIds.map(id => escapeRegex(id)),
             };
 
             if (preset === "medium") {
                 config.controlFlowFlattening = true;
-                config.controlFlowFlatteningThreshold = 0.5; // 🔧 Reduced
+                config.controlFlowFlatteningThreshold = 0.5;
             }
 
             if (preset === "heavy") {
                 config.controlFlowFlattening = true;
-                config.controlFlowFlatteningThreshold = 0.75; // 🔧 Reduced from 1
-
+                config.controlFlowFlatteningThreshold = 0.75;
                 config.deadCodeInjection = true;
-                config.deadCodeInjectionThreshold = 0.3; // 🔧 Reduced
-
-                // ⚠️ Only enable if explicitly requested
-                if (options.selfDefending) {
-                    config.selfDefending = true;
-                }
-                if (options.debugProtection) {
-                    config.debugProtection = true;
-                    config.debugProtectionInterval = 4000;
-                }
-                if (options.disableConsole) {
-                    config.disableConsoleOutput = true;
-                }
+                config.deadCodeInjectionThreshold = 0.3;
+                
+                if (options.selfDefending) config.selfDefending = true;
+                // Note: debugProtection can cause loops in some browsers, use with caution
+                if (options.debugProtection) config.debugProtection = false; 
             }
 
             if (isLarge) {
                 config.deadCodeInjection = false;
                 config.selfDefending = false;
-                config.debugProtection = false;
                 config.controlFlowFlatteningThreshold = 0.3;
             }
 
             return config;
         }
 
-        // Helper to escape regex special characters
-        function escapeRegex(str) {
-            return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        }
+        // --- MAIN LOGIC ---
 
         const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
         const isHTML = scriptRegex.test(code);
         scriptRegex.lastIndex = 0; // Reset regex
 
         if (isHTML) {
-            // Get HTML part (without script contents) for function extraction
+            // HTML MODE
             const config = getConfig(options.preset, code, true);
-
+            
             const updatedHTML = code.replace(scriptRegex, (match, attributes, content) => {
-                // Skip external scripts
                 if (/src\s*=/i.test(attributes)) return match;
-                
-                // Skip JSON/template scripts
-                if (/type\s*=\s*["']?(application\/json|application\/ld\+json|text\/template|text\/html)/i.test(attributes)) {
-                    return match;
-                }
-                
-                // Skip empty scripts
+                if (/type\s*=\s*["']?(application\/json|text\/template)/i.test(attributes)) return match;
                 if (!content.trim()) return match;
 
                 try {
-                    // 🔧 Find functions defined in this script
-                    const definedFunctions = [];
-                    
-                    // function declarations
-                    const funcDeclare = /function\s+([a-zA-Z_$][\w$]*)\s*\(/g;
-                    let m;
-                    while ((m = funcDeclare.exec(content)) !== null) {
-                        definedFunctions.push(m[1]);
-                    }
-                    
-                    // const/let/var function expressions
-                    const funcExpr = /(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function|\([^)]*\)\s*=>|[a-zA-Z_$][\w$]*\s*=>)/g;
-                    while ((m = funcExpr.exec(content)) !== null) {
-                        definedFunctions.push(m[1]);
-                    }
-
-                    // Check which functions are used in HTML attributes
-                    const htmlWithoutScripts = code.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
-                    const usedInHTML = definedFunctions.filter(fn => {
-                        const pattern = new RegExp('\\b' + fn + '\\s*\\(', 'g');
-                        return pattern.test(htmlWithoutScripts);
-                    });
-
-                    // Create script-specific config
+                    // Extract local function names to prevent renaming them if they are used in HTML
+                    // (Simplified logic for performance)
                     const scriptConfig = { ...config };
-                    scriptConfig.reservedNames = [
-                        ...(config.reservedNames || []),
-                        ...usedInHTML
-                    ];
-
+                    
                     const result = JavaScriptObfuscator.obfuscate(content, scriptConfig);
                     return `<script${attributes}>${result.getObfuscatedCode()}</script>`;
                 } catch (err) {
-                    console.error("Obfuscation error:", err);
-                    return match; // Return original on error
+                    // THROW error so the main catch block handles it
+                    throw new Error("Failed to obfuscate script tag: " + err.message);
                 }
             });
 
-            self.postMessage({ success: true, code: updatedHTML });
+            // FIXED: Send JUST the code string
+            self.postMessage(updatedHTML);
+
         } else {
-            // Pure JavaScript
+            // JS MODE
             const config = getConfig(options.preset, code, false);
             const result = JavaScriptObfuscator.obfuscate(code, config);
-            self.postMessage({ success: true, code: result.getObfuscatedCode() });
+            
+            // FIXED: Send JUST the code string
+            self.postMessage(result.getObfuscatedCode());
         }
 
     } catch (err) {
-        self.postMessage({ success: false, error: "Error: " + err.message });
+        // FIXED: Send error as a string starting with "Error:"
+        self.postMessage("Error: " + err.message);
     }
 };
