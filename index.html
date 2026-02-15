@@ -1,699 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Code Obfuscator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #fdfaf6;
-            --card-bg: #ffffff;
-            --text-main: #000000;
-            --text-on-accent: #000000;
-            --border-color: #000000;
-            --border-thick: 3px solid var(--border-color);
-            --shadow-hard: 4px 4px 0px var(--border-color);
-            --accent-pink: #ff90e8;
-            --accent-yellow: #ffc900;
-            --accent-blue: #23a094;
-            --accent-green: #7bed9f;
-            --accent-orange: #ff6b35;
-            --accent-purple: #a855f7;
-            --input-bg: #ffffff;
-            --input-focus: #fff9db;
-            --textarea-bg: #fafafa;
-            --spacing: 7px;
-            --gap-size: 7px;
-            --status-gap: 7px;
-            --font-xs: clamp(9px, 2vw, 11px);
-            --font-sm: clamp(10px, 2.2vw, 12px);
-            --font-base: clamp(11px, 2.5vw, 14px);
-            --font-md: clamp(12px, 2.8vw, 15px);
-            --font-lg: clamp(14px, 3vw, 18px);
-            --font-xl: clamp(16px, 3.5vw, 22px);
-            --btn-height: 36px;
-        }
-        body.dark-theme {
-            --bg-color: #0a0a0a;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-on-accent: #000000;
-            --border-color: #ffffff;
-            --accent-pink: #f472b6;
-            --accent-yellow: #facc15;
-            --accent-blue: #38bdf8;
-            --accent-green: #4ade80;
-            --accent-orange: #fb923c;
-            --accent-purple: #c084fc;
-            --input-bg: #1e1e1e;
-            --input-focus: #2a2a2a;
-            --textarea-bg: #141414;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            user-select: none;
-        }
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: var(--bg-color);
-            color: var(--text-main);
-            font-size: var(--font-base);
-            line-height: 1.4;
-            transition: background 0.3s, color 0.3s;
-        }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: var(--accent-yellow); border: 1px solid var(--border-color); }
-        .title-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px var(--spacing);
-            border-bottom: 3px solid var(--border-color);
-            background: var(--bg-color);
-            flex-shrink: 0;
-        }
-        .title-bar h1 {
-            font-size: var(--font-lg);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .title-bar h1 span {
-            background: var(--accent-yellow);
-            color: var(--text-on-accent);
-            padding: 3px 8px;
-            border: 2px solid var(--border-color);
-            margin-left: 3px;
-        }
-        .title-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .download-exe-btn {
-            background: var(--accent-green);
-            color: var(--text-on-accent);
-            border: var(--border-thick);
-            padding: 0 12px;
-            height: var(--btn-height);
-            font-size: var(--font-sm);
-            font-weight: 700;
-            font-family: 'Space Grotesk', sans-serif;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 3px 3px 0 var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.1s;
-            text-decoration: none;
-        }
-        .download-exe-btn:active { transform: translate(2px,2px); box-shadow: none; }
-        .download-exe-btn .btn-text {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .download-exe-btn .btn-icon-only {
-            display: none;
-        }
-        .theme-btn {
-            background: var(--accent-yellow);
-            color: var(--text-on-accent);
-            border: var(--border-thick);
-            width: var(--btn-height);
-            height: var(--btn-height);
-            font-size: var(--font-md);
-            cursor: pointer;
-            box-shadow: 3px 3px 0 var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.1s;
-        }
-        .theme-btn:active { transform: translate(2px,2px); box-shadow: none; }
-        .container {
-            width: 100%;
-            height: calc(100% - 53px);
-            padding: var(--spacing);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .settings-panel {
-            background: var(--card-bg);
-            border: var(--border-thick);
-            box-shadow: var(--shadow-hard);
-            margin-bottom: 8px;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .settings-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            cursor: pointer;
-            background: var(--accent-blue);
-            color: #fff;
-            font-weight: 700;
-            font-size: var(--font-sm);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .settings-body {
-            padding: 12px;
-            max-height: 350px;
-            opacity: 1;
-            transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
-        }
-        .settings-panel.collapsed .settings-body {
-            max-height: 0;
-            opacity: 0;
-            padding: 0 12px;
-        }
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .field-group label.field-label {
-            display: block;
-            font-size: var(--font-xs);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-            opacity: 0.8;
-        }
-        .file-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            background: var(--accent-purple);
-            color: #fff;
-            border: var(--border-thick);
-            padding: 8px;
-            font-size: var(--font-sm);
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 2px 2px 0 var(--border-color);
-            transition: all 0.1s;
-        }
-        .file-btn:active { transform: translate(2px,2px); box-shadow: none; }
-        .file-input { display: none; }
-        .file-name {
-            font-size: var(--font-xs);
-            opacity: 0.6;
-            margin-top: 3px;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .brutal-select {
-            width: 100%;
-            padding: 8px 10px;
-            background: var(--input-bg);
-            color: var(--text-main);
-            border: var(--border-thick);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: var(--font-sm);
-            font-weight: 600;
-            box-shadow: 2px 2px 0 var(--border-color);
-            cursor: pointer;
-            outline: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-        }
-        body.dark-theme .brutal-select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-        }
-        .check-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 10px;
-            background: var(--input-bg);
-            border: var(--border-thick);
-            cursor: pointer;
-            font-size: var(--font-sm);
-            font-weight: 600;
-            box-shadow: 2px 2px 0 var(--border-color);
-            transition: all 0.1s;
-        }
-        .check-item:hover { background: var(--input-focus); }
-        .check-item:active { transform: translate(2px,2px); box-shadow: none; }
-        .brutal-check {
-            width: 16px;
-            height: 16px;
-            appearance: none;
-            background: var(--card-bg);
-            border: 2px solid var(--border-color);
-            cursor: pointer;
-            flex-shrink: 0;
-            position: relative;
-        }
-        .brutal-check:checked { background: var(--accent-green); }
-        .brutal-check:checked::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: var(--font-xs);
-            font-weight: 900;
-        }
-        .obfuscate-btn {
-            grid-column: 1 / -1;
-            padding: 12px;
-            background: var(--accent-orange);
-            color: #fff;
-            border: var(--border-thick);
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: var(--font-md);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            box-shadow: 3px 3px 0 var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.1s;
-        }
-        .obfuscate-btn:active { transform: translate(3px,3px); box-shadow: none; }
-        .editor-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: var(--gap-size);
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-        }
-        .editor-card {
-            background: var(--card-bg);
-            border: var(--border-thick);
-            box-shadow: var(--shadow-hard);
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-        }
-        .editor-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-bottom: var(--border-thick);
-            font-size: var(--font-sm);
-            font-weight: 700;
-            text-transform: uppercase;
-            flex-shrink: 0;
-        }
-        .editor-header .icon {
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid var(--border-color);
-            font-size: var(--font-xs);
-        }
-        .editor-card.input .icon { background: var(--accent-pink); }
-        .editor-card.output .icon { background: var(--accent-green); color: var(--text-on-accent); }
-        .brutal-textarea {
-            width: 100%;
-            height: 100%;
-            flex: 1;
-            padding: 10px;
-            background: var(--textarea-bg);
-            color: var(--text-main);
-            border: none;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: var(--font-sm);
-            line-height: 1.6;
-            resize: none;
-            outline: none;
-            user-select: text;
-            -webkit-user-select: text;
-            scrollbar-color: var(--accent-yellow) var(--bg-color);
-            transition: scrollbar-color 0.3s;
-        }
-        .brutal-textarea::placeholder { color: var(--text-main); opacity: 0.35; }
-        .brutal-textarea:focus { background: var(--input-focus); }
-        .brutal-textarea::-webkit-scrollbar { width: 6px; height: 6px; }
-        .brutal-textarea::-webkit-scrollbar-track { background: var(--bg-color); }
-        .brutal-textarea::-webkit-scrollbar-thumb { background: var(--accent-yellow); border: 1px solid var(--border-color); transition: background 0.3s, opacity 0.3s; }
-        .brutal-textarea.hide-scrollbar::-webkit-scrollbar-thumb { background: transparent; border-color: transparent; }
-        .brutal-textarea.hide-scrollbar { scrollbar-color: transparent transparent; }
-        .bottom-section { flex-shrink: 0; margin-top: 8px; }
-        .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-size); }
-        .action-btn {
-            padding: 10px;
-            border: var(--border-thick);
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: var(--font-sm);
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 2px 2px 0 var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.1s;
-        }
-        .action-btn:active { transform: translate(2px,2px); box-shadow: none; }
-        .action-btn.copy { background: var(--accent-blue); color: #fff; }
-        .action-btn.download { background: var(--accent-green); color: var(--text-on-accent); }
-        .status-bar-container { display: grid; grid-template-columns: 1fr 1fr; gap: var(--status-gap); margin-top: 8px; }
-        .status-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: var(--accent-yellow);
-            color: var(--text-on-accent);
-            border: var(--border-thick);
-            font-size: var(--font-sm);
-            font-weight: 700;
-        }
-        .status-bar.success { background: var(--accent-green); }
-        .status-bar.error { background: var(--accent-pink); }
-        .developer-bar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 10px;
-            background: var(--accent-purple);
-            color: #fff;
-            border: var(--border-thick);
-            font-size: var(--font-sm);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-        .loading-overlay.active { display: flex; }
-        .loading-box {
-            background: var(--card-bg);
-            border: var(--border-thick);
-            padding: 25px 35px;
-            box-shadow: var(--shadow-hard);
-            text-align: center;
-        }
-        .spinner {
-            width: 35px;
-            height: 35px;
-            border: 3px solid var(--accent-yellow);
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin: 0 auto 12px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text { font-size: var(--font-md); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        @media (max-width: 599px) {
-            .download-exe-btn .btn-text { display: none; }
-            .download-exe-btn .btn-icon-only { display: flex; align-items: center; justify-content: center; }
-            .download-exe-btn { padding: 0; width: var(--btn-height); justify-content: center; }
-        }
-        @media (orientation: portrait) { .editor-wrapper { flex-direction: column; } }
-        @media (orientation: landscape) { .editor-wrapper { flex-direction: row; } }
-        @media (min-width: 600px) {
-            :root { --font-xs: 11px; --font-sm: 12px; --font-base: 14px; --font-md: 15px; --font-lg: 18px; --font-xl: 22px; --btn-height: 38px; --gap-size: 10px; --status-gap: 9px; --spacing: 8px; }
-        }
-        @media (min-width: 1024px) {
-            :root { --spacing: 13px; --font-xs: 12px; --font-sm: 13px; --font-base: 15px; --font-md: 16px; --font-lg: 20px; --font-xl: 24px; --btn-height: 40px; --gap-size: 12px; --status-gap: 11px; }
-            .title-bar { padding: 10px var(--spacing); }
-            .editor-wrapper { flex-direction: row; }
-            .settings-grid { gap: 10px; }
-            .bottom-section { margin-top: 12px; }
-        }
-        @media (min-width: 1400px) {
-            :root { --spacing: 18px; --font-xs: 13px; --font-sm: 14px; --font-base: 16px; --font-md: 17px; --font-lg: 22px; --font-xl: 26px; --btn-height: 42px; --gap-size: 14px; --status-gap: 13px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Obfuscator Pro</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(135deg,#141e30,#243b55);
+    color: white;
+}
+
+header {
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.controls {
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+}
+
+textarea {
+    width: 100%;
+    height: 200px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-family: monospace;
+}
+
+button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.option-group {
+    margin-top: 10px;
+}
+
+.loading {
+    display: none;
+    margin-top: 10px;
+    color: #00ffcc;
+}
+</style>
 </head>
 <body>
-    <div class="title-bar">
-        <h1>CODE <span>OBFUSCATOR</span></h1>
-        <div class="title-bar-right">
-            <a href="https://www.dropbox.com/scl/fi/k1yem050fqqm75kkipk2u/Code-Obfuscator.exe?rlkey=4zsn9x4xgldare28k0n083oxe&st=yecb88tg&dl=1" class="download-exe-btn" download>
-                <span class="btn-text">DOWNLOAD FOR WINDOWS</span>
-                <span class="btn-icon-only"><i class="fa-solid fa-download"></i></span>
-            </a>
-            <button id="themeToggle" class="theme-btn" aria-label="Toggle Theme">
-                <i class="fa-solid fa-moon"></i>
-            </button>
-        </div>
-    </div>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-box">
-            <div class="spinner"></div>
-            <div class="loading-text">Obfuscating...</div>
-        </div>
-    </div>
-    <div class="container">
-        <div class="settings-panel collapsed" id="settingsPanel">
-            <div class="settings-header" onclick="toggleSettings()">
-                <span><i class="fa-solid fa-sliders"></i> Settings</span>
-                <i class="fa-solid fa-chevron-down"></i>
-            </div>
-            <div class="settings-body">
-                <div class="settings-grid">
-                    <div class="field-group">
-                        <label class="file-btn" for="fileInput">
-                            <i class="fa-solid fa-upload"></i> File
-                        </label>
-                        <input type="file" id="fileInput" class="file-input" accept=".js,.html,.htm">
-                    </div>
-                    <div class="field-group">
-                        <select id="preset" class="brutal-select" onchange="applyPreset()">
-                            <option value="light">⚡ Light</option>
-                            <option value="medium">🔒 Medium</option>
-                            <option value="heavy">🛡️ Heavy</option>
-                        </select>
-                    </div>
-                    <label class="check-item">
-                        <input type="checkbox" id="stringArray" class="brutal-check" checked>
-                        Strings
-                    </label>
-                    <label class="check-item">
-                        <input type="checkbox" id="controlFlow" class="brutal-check">
-                        Control Flow
-                    </label>
-                    <label class="check-item">
-                        <input type="checkbox" id="deadCode" class="brutal-check">
-                        Dead Code
-                    </label>
-                    <label class="check-item">
-                        <input type="checkbox" id="selfDefending" class="brutal-check">
-                        Self Defend
-                    </label>
-                    <button class="obfuscate-btn" onclick="startObfuscation()">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Obfuscate
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="editor-wrapper">
-            <div class="editor-card input">
-                <div class="editor-header">
-                    <div class="icon"><i class="fa-solid fa-code"></i></div>
-                    <span>Input</span>
-                </div>
-                <textarea id="input" class="brutal-textarea hide-scrollbar" placeholder="Paste your code here..."></textarea>
-            </div>
-            <div class="editor-card output">
-                <div class="editor-header">
-                    <div class="icon"><i class="fa-solid fa-lock"></i></div>
-                    <span>Output</span>
-                </div>
-                <textarea id="output" class="brutal-textarea hide-scrollbar" placeholder="Obfuscated code appears here..." readonly></textarea>
-            </div>
-        </div>
-        <div class="bottom-section">
-            <div class="action-row">
-                <button class="action-btn copy" onclick="copyToClipboard()">
-                    <strong>COPY</strong>
-                </button>
-                <button class="action-btn download" onclick="downloadFile()">
-                    <strong>DOWNLOAD</strong>
-                </button>
-            </div>
-            <div class="status-bar-container">
-                <div class="status-bar" id="statusBar">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <span id="statusText">Ready to obfuscate</span>
-                </div>
-                <div class="developer-bar">
-                    DEVELOPED BY XRV LABS
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => {
-            if (e.keyCode >= 112 && e.keyCode <= 123) e.preventDefault();
-            if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) e.preventDefault();
-            if (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) e.preventDefault();
-            if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.keyCode === 187 || e.keyCode === 189)) e.preventDefault();
-        });
-        document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
-        const themeBtn = document.getElementById('themeToggle');
-        const themeIcon = themeBtn.querySelector('i');
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-theme');
-            themeIcon.classList.replace('fa-moon', 'fa-sun');
-        }
-        themeBtn.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            themeIcon.classList.replace(isDark ? 'fa-moon' : 'fa-sun', isDark ? 'fa-sun' : 'fa-moon');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-        function toggleSettings() {
-            document.getElementById('settingsPanel').classList.toggle('collapsed');
-        }
-        function applyPreset() {
-            const preset = document.getElementById('preset').value;
-            const stringArray = document.getElementById('stringArray');
-            const controlFlow = document.getElementById('controlFlow');
-            const deadCode = document.getElementById('deadCode');
-            const selfDefending = document.getElementById('selfDefending');
-            if (preset === 'light') {
-                stringArray.checked = true;
-                controlFlow.checked = false;
-                deadCode.checked = false;
-                selfDefending.checked = false;
-            } else if (preset === 'medium') {
-                stringArray.checked = true;
-                controlFlow.checked = true;
-                deadCode.checked = false;
-                selfDefending.checked = false;
-            } else if (preset === 'heavy') {
-                stringArray.checked = true;
-                controlFlow.checked = true;
-                deadCode.checked = true;
-                selfDefending.checked = true;
-            }
-        }
-        const worker = new Worker("worker.js");
-        const inputArea = document.getElementById("input");
-        const outputArea = document.getElementById("output");
-        const loadingOverlay = document.getElementById("loadingOverlay");
-        const statusBar = document.getElementById("statusBar");
-        const statusText = document.getElementById("statusText");
-        let scrollbarTimeouts = {};
-        function setupScrollbarAutoHide(textarea) {
-            const id = textarea.id;
-            function showScrollbar() {
-                textarea.classList.remove('hide-scrollbar');
-                if (scrollbarTimeouts[id]) clearTimeout(scrollbarTimeouts[id]);
-            }
-            function hideScrollbarAfterDelay() {
-                if (scrollbarTimeouts[id]) clearTimeout(scrollbarTimeouts[id]);
-                scrollbarTimeouts[id] = setTimeout(() => { textarea.classList.add('hide-scrollbar'); }, 2000);
-            }
-            textarea.addEventListener('scroll', () => { showScrollbar(); hideScrollbarAfterDelay(); });
-            textarea.addEventListener('mouseenter', () => { showScrollbar(); });
-            textarea.addEventListener('mouseleave', () => { hideScrollbarAfterDelay(); });
-            textarea.addEventListener('focus', () => { showScrollbar(); });
-            textarea.addEventListener('blur', () => { hideScrollbarAfterDelay(); });
-            textarea.addEventListener('touchstart', () => { showScrollbar(); });
-            textarea.addEventListener('touchend', () => { hideScrollbarAfterDelay(); });
-        }
-        setupScrollbarAutoHide(inputArea);
-        setupScrollbarAutoHide(outputArea);
-        document.getElementById("fileInput").addEventListener("change", function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = event => {
-                inputArea.value = event.target.result;
-                updateStatus('info', 'Loaded: ' + file.name);
-            };
-            reader.readAsText(file);
-        });
-        function updateStatus(type, msg) {
-            statusBar.className = 'status-bar' + (type === 'success' ? ' success' : type === 'error' ? ' error' : '');
-            statusBar.querySelector('i').className = 'fa-solid ' + (type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info');
-            statusText.textContent = msg;
-        }
-        function startObfuscation() {
-            const code = inputArea.value;
-            if (!code.trim()) return updateStatus('error', 'Provide code first!');
-            loadingOverlay.classList.add('active');
-            updateStatus('info', 'Processing...');
-            worker.postMessage({
-                code,
-                options: {
-                    stringArray: document.getElementById("stringArray").checked,
-                    controlFlow: document.getElementById("controlFlow").checked,
-                    deadCode: document.getElementById("deadCode").checked,
-                    selfDefending: document.getElementById("selfDefending").checked
-                }
-            });
-        }
-        worker.onmessage = function(e) {
-            loadingOverlay.classList.remove('active');
-            const response = e.data;
-            if (response.success) {
-                outputArea.value = response.code;
-                const ratio = ((new Blob([response.code]).size / new Blob([inputArea.value]).size) * 100).toFixed(0);
-                updateStatus('success', 'Done! Size: ' + ratio + '% of original');
-            } else {
-                outputArea.value = '';
-                updateStatus('error', response.error);
-            }
-        };
-        function copyToClipboard() {
-            if (!outputArea.value.trim()) return updateStatus('error', 'Nothing to copy!');
-            navigator.clipboard.writeText(outputArea.value)
-                .then(() => updateStatus('success', 'Copied!'))
-                .catch(() => { outputArea.select(); document.execCommand('copy'); updateStatus('success', 'Copied!'); });
-        }
-        function downloadFile() {
-            if (!outputArea.value.trim()) return updateStatus('error', 'Nothing to download!');
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(new Blob([outputArea.value], { type: "text/javascript" }));
-            a.download = "obfuscated.js";
-            a.click();
-            URL.revokeObjectURL(a.href);
-            updateStatus('success', 'Downloaded!');
-        }
-        applyPreset();
-    </script>
+
+<header>🚀 JS Obfuscator Pro</header>
+
+<div class="controls">
+
+<input type="file" id="fileInput" accept=".js,.html,.htm">
+
+
+<div class="option-group">
+    <label>Preset Mode:</label>
+    <select id="preset">
+        <option value="light">Light (Fast)</option>
+        <option value="medium">Medium</option>
+        <option value="heavy">Heavy (Max Protection)</option>
+    </select>
+</div>
+
+<div class="option-group">
+    <label><input type="checkbox" id="stringArray" checked> Encode Strings</label><br>
+    <label><input type="checkbox" id="controlFlow"> Control Flow Flattening</label><br>
+    <label><input type="checkbox" id="deadCode"> Dead Code Injection</label><br>
+    <label><input type="checkbox" id="selfDefending"> Self Defending</label>
+</div>
+
+<button onclick="startObfuscation()">Obfuscate</button>
+
+<div class="loading" id="loading">Processing... ⏳</div>
+
+<textarea id="input" placeholder="Paste JS code here..."></textarea>
+<textarea id="output" placeholder="Obfuscated output..."></textarea>
+
+<button onclick="downloadFile()">Download Result</button>
+
+</div>
+
+<script>
+const worker = new Worker("worker.js");
+
+const inputArea = document.getElementById("input");
+const outputArea = document.getElementById("output");
+const loading = document.getElementById("loading");
+
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        inputArea.value = event.target.result;
+    };
+    reader.readAsText(file);
+});
+
+function startObfuscation() {
+    const code = inputArea.value;
+    if (!code.trim()) {
+        alert("Provide JS code first.");
+        return;
+    }
+
+    loading.style.display = "block";
+
+    const options = {
+        preset: document.getElementById("preset").value,
+        stringArray: document.getElementById("stringArray").checked,
+        controlFlow: document.getElementById("controlFlow").checked,
+        deadCode: document.getElementById("deadCode").checked,
+        selfDefending: document.getElementById("selfDefending").checked
+    };
+
+    worker.postMessage({ code, options });
+}
+
+worker.onmessage = function(e) {
+    loading.style.display = "none";
+    outputArea.value = e.data;
+};
+
+function downloadFile() {
+    const blob = new Blob([outputArea.value], { type: "text/javascript" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "obfuscated.js";
+    a.click();
+}
+</script>
+
 </body>
 </html>
