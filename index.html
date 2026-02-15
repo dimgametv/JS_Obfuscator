@@ -6,139 +6,723 @@
 <title>JS Obfuscator Pro</title>
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
-    font-family: Arial;
-    background: linear-gradient(135deg,#141e30,#243b55);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #141e30, #243b55);
     color: white;
+    min-height: 100vh;
 }
 
 header {
-    padding: 15px;
+    padding: 20px;
     text-align: center;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: bold;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 .controls {
-    padding: 15px;
+    padding: 20px;
     background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.col {
+    flex: 1;
+    min-width: 200px;
+}
+
+.option-group {
+    background: rgba(255,255,255,0.05);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.option-group h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #00ffcc;
+}
+
+label {
+    display: block;
+    margin: 8px 0;
+    cursor: pointer;
+}
+
+label:hover {
+    color: #00ffcc;
+}
+
+input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #00ffcc;
+}
+
+select, input[type="file"] {
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    width: 100%;
+}
+
+select option {
+    background: #243b55;
 }
 
 textarea {
     width: 100%;
-    height: 200px;
-    margin-top: 10px;
-    padding: 10px;
+    height: 250px;
+    padding: 15px;
     border-radius: 8px;
-    border: none;
-    font-family: monospace;
+    border: 2px solid rgba(255,255,255,0.1);
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    background: rgba(0,0,0,0.4);
+    color: #e0e0e0;
+    resize: vertical;
+    transition: border-color 0.3s;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #00ffcc;
+}
+
+.btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 15px 0;
 }
 
 button {
-    padding: 10px 20px;
-    margin-top: 10px;
+    padding: 12px 24px;
     border: none;
     border-radius: 6px;
     font-weight: bold;
     cursor: pointer;
+    transition: all 0.3s;
 }
 
-.option-group {
-    margin-top: 10px;
+button.primary {
+    background: linear-gradient(135deg, #00ffcc, #00cc99);
+    color: #141e30;
 }
 
-.loading {
+button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0,255,204,0.4);
+}
+
+button.secondary {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+button.secondary:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.status {
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin: 10px 0;
     display: none;
-    margin-top: 10px;
+}
+
+.status.loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,255,204,0.1);
     color: #00ffcc;
+}
+
+.status.error {
+    display: block;
+    background: rgba(255,77,77,0.2);
+    color: #ff6b6b;
+}
+
+.status.success {
+    display: block;
+    background: rgba(0,255,204,0.1);
+    color: #00ffcc;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0,255,204,0.3);
+    border-top-color: #00ffcc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.stats {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 5px;
+}
+
+.warning-box {
+    background: rgba(255,193,7,0.1);
+    border-left: 3px solid #ffc107;
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+}
+
+.warning-box strong {
+    color: #ffc107;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    margin-left: 5px;
+    width: 16px;
+    height: 16px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 16px;
+    font-size: 11px;
+    cursor: help;
+}
+
+.tooltip:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    width: 200px;
+    z-index: 100;
+}
+
+@media (max-width: 768px) {
+    .row {
+        flex-direction: column;
+    }
+    
+    textarea {
+        height: 180px;
+    }
 }
 </style>
 </head>
 <body>
 
-<header>🚀 JS Obfuscator Pro</header>
+<header>🔐 JS Obfuscator Pro</header>
 
-<div class="controls">
+<div class="container">
+    <div class="controls">
+        
+        <div class="row">
+            <div class="col">
+                <label>📁 Upload File:</label>
+                <input type="file" id="fileInput" accept=".js,.html,.htm">
+            </div>
+            <div class="col">
+                <label>🎚️ Preset Mode:</label>
+                <select id="preset">
+                    <option value="light">Light (Fast & Safe)</option>
+                    <option value="medium" selected>Medium (Balanced)</option>
+                    <option value="heavy">Heavy (Max Protection)</option>
+                </select>
+            </div>
+        </div>
 
-<input type="file" id="fileInput" accept=".js,.html,.htm">
+        <div class="row">
+            <div class="col">
+                <div class="option-group">
+                    <h3>🔤 String Protection</h3>
+                    <label>
+                        <input type="checkbox" id="stringArray" checked>
+                        Encode Strings (Base64)
+                        <span class="tooltip" data-tip="Converts strings to encoded array lookups. Safe for most code.">?</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="option-group">
+                    <h3>🌀 Control Flow</h3>
+                    <label>
+                        <input type="checkbox" id="controlFlow">
+                        Control Flow Flattening
+                        <span class="tooltip" data-tip="Restructures code flow. May slow execution slightly.">?</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" id="deadCode">
+                        Dead Code Injection
+                        <span class="tooltip" data-tip="Adds fake code paths. Increases file size.">?</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="option-group">
+                    <h3>🛡️ Anti-Tamper</h3>
+                    <label>
+                        <input type="checkbox" id="selfDefending">
+                        Self Defending
+                        <span class="tooltip" data-tip="Breaks if code is reformatted. Can cause issues!">?</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" id="debugProtection">
+                        Debug Protection
+                        <span class="tooltip" data-tip="Prevents DevTools debugging. May freeze browser.">?</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" id="disableConsole">
+                        Disable Console
+                        <span class="tooltip" data-tip="Disables console.log output.">?</span>
+                    </label>
+                </div>
+            </div>
+        </div>
 
+        <div class="warning-box" id="warningBox" style="display: none;">
+            <strong>⚠️ Warning:</strong> <span id="warningText"></span>
+        </div>
 
-<div class="option-group">
-    <label>Preset Mode:</label>
-    <select id="preset">
-        <option value="light">Light (Fast)</option>
-        <option value="medium">Medium</option>
-        <option value="heavy">Heavy (Max Protection)</option>
-    </select>
-</div>
+        <div class="btn-row">
+            <button class="primary" id="obfuscateBtn" onclick="startObfuscation()">
+                🔒 Obfuscate Code
+            </button>
+            <button class="secondary" onclick="clearAll()">🗑️ Clear</button>
+            <button class="secondary" onclick="testCode()">🧪 Test Output</button>
+        </div>
 
-<div class="option-group">
-    <label><input type="checkbox" id="stringArray" checked> Encode Strings</label><br>
-    <label><input type="checkbox" id="controlFlow"> Control Flow Flattening</label><br>
-    <label><input type="checkbox" id="deadCode"> Dead Code Injection</label><br>
-    <label><input type="checkbox" id="selfDefending"> Self Defending</label>
-</div>
+        <div class="status" id="status">
+            <div class="spinner"></div>
+            <span id="statusText">Processing...</span>
+        </div>
 
-<button onclick="startObfuscation()">Obfuscate</button>
+        <label>📝 Input Code:</label>
+        <textarea id="input" placeholder="Paste your JavaScript or HTML code here..."></textarea>
+        <div class="stats" id="inputStats">0 characters</div>
 
-<div class="loading" id="loading">Processing... ⏳</div>
+        <label>🔐 Obfuscated Output:</label>
+        <textarea id="output" placeholder="Obfuscated code will appear here..." readonly></textarea>
+        <div class="stats" id="outputStats">0 characters</div>
 
-<textarea id="input" placeholder="Paste JS code here..."></textarea>
-<textarea id="output" placeholder="Obfuscated output..."></textarea>
+        <div class="btn-row">
+            <button class="primary" onclick="downloadFile()">📥 Download Result</button>
+            <button class="secondary" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+        </div>
 
-<button onclick="downloadFile()">Download Result</button>
-
+    </div>
 </div>
 
 <script>
-const worker = new Worker("worker.js");
+// Create worker with inline code for better compatibility
+const workerCode = `
+importScripts("https://cdn.jsdelivr.net/npm/javascript-obfuscator/dist/index.browser.js");
+
+self.onmessage = function (e) {
+    let { code, options } = e.data;
+
+    try {
+        code = code.replace(/^\\uFEFF/, "");
+        const isLarge = code.length > 500000;
+
+        function extractHTMLFunctionNames(htmlCode) {
+            const patterns = [
+                /\\bon\\w+\\s*=\\s*["']?\\s*(\\w+)\\s*\\(/gi,
+                /\\bon\\w+\\s*=\\s*["']([^"']+)["']/gi,
+            ];
+            
+            const names = new Set();
+            for (const pattern of patterns) {
+                let match;
+                while ((match = pattern.exec(htmlCode)) !== null) {
+                    const funcName = match[1].split(/[^a-zA-Z0-9_$]/).filter(Boolean)[0];
+                    if (funcName && funcName.length > 1) {
+                        names.add(funcName);
+                    }
+                }
+            }
+            return Array.from(names);
+        }
+
+        function extractDOMIdentifiers(jsCode) {
+            const patterns = [
+                /getElementById\\s*\\(\\s*["']([^"']+)["']\\s*\\)/gi,
+                /getElementsByClassName\\s*\\(\\s*["']([^"']+)["']\\s*\\)/gi,
+                /querySelector(?:All)?\\s*\\(\\s*["']([^"']+)["']\\s*\\)/gi,
+                /\\.classList\\.(?:add|remove|toggle|contains)\\s*\\(\\s*["']([^"']+)["']\\s*\\)/gi,
+                /\\.getAttribute\\s*\\(\\s*["']([^"']+)["']\\s*\\)/gi,
+                /\\.setAttribute\\s*\\(\\s*["']([^"']+)["']\\s*/gi,
+                /\\.dataset\\.([a-zA-Z]+)/gi,
+            ];
+            
+            const identifiers = new Set();
+            for (const pattern of patterns) {
+                let match;
+                while ((match = pattern.exec(jsCode)) !== null) {
+                    identifiers.add(match[1]);
+                }
+            }
+            return Array.from(identifiers);
+        }
+
+        function getConfig(preset, codeContent, isHTML) {
+            const htmlFunctions = isHTML ? extractHTMLFunctionNames(codeContent) : [];
+            const domIdentifiers = extractDOMIdentifiers(codeContent);
+            
+            let config = {
+                compact: true,
+                target: "browser",
+                ignoreImports: true,
+                renameGlobals: false,
+                transformObjectKeys: false,
+                
+                stringArray: options.stringArray !== false,
+                stringArrayEncoding: ["base64"],
+                stringArrayThreshold: 0.75,
+                stringArrayRotate: true,
+                stringArrayShuffle: true,
+                stringArrayIndexShift: true,
+                
+                reservedStrings: [
+                    ...domIdentifiers.map(id => id.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&')),
+                ],
+
+                reservedNames: [
+                    ...htmlFunctions,
+                ],
+
+                simplify: true,
+                numbersToExpressions: true,
+                splitStrings: false,
+                
+                identifierNamesGenerator: "hexadecimal",
+                unicodeEscapeSequence: false,
+            };
+
+            if (preset === "medium" || options.controlFlow) {
+                config.controlFlowFlattening = true;
+                config.controlFlowFlatteningThreshold = 0.5;
+            }
+
+            if (preset === "heavy") {
+                config.controlFlowFlattening = true;
+                config.controlFlowFlatteningThreshold = 0.75;
+
+                if (options.deadCode) {
+                    config.deadCodeInjection = true;
+                    config.deadCodeInjectionThreshold = 0.3;
+                }
+
+                config.selfDefending = options.selfDefending || false;
+                config.debugProtection = options.debugProtection || false;
+                if (config.debugProtection) {
+                    config.debugProtectionInterval = 4000;
+                }
+                config.disableConsoleOutput = options.disableConsole || false;
+            }
+
+            if (options.deadCode && preset !== "heavy") {
+                config.deadCodeInjection = true;
+                config.deadCodeInjectionThreshold = 0.3;
+            }
+
+            if (isLarge) {
+                config.deadCodeInjection = false;
+                config.selfDefending = false;
+                config.debugProtection = false;
+                config.controlFlowFlatteningThreshold = Math.min(config.controlFlowFlatteningThreshold || 0, 0.3);
+            }
+
+            return config;
+        }
+
+        const scriptRegex = /<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi;
+        const isHTML = scriptRegex.test(code);
+        scriptRegex.lastIndex = 0;
+
+        if (isHTML) {
+            const config = getConfig(options.preset, code, true);
+            
+            const updatedHTML = code.replace(scriptRegex, (match, attributes, content) => {
+                if (/src\\s*=/i.test(attributes)) return match;
+                if (/type\\s*=\\s*["']?(application\\/json|application\\/ld\\+json|text\\/template|text\\/html)/i.test(attributes)) {
+                    return match;
+                }
+                if (!content.trim()) return match;
+
+                try {
+                    const scriptConfig = { ...config };
+                    
+                    const funcPatterns = [
+                        /function\\s+(\\w+)/g,
+                        /(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?function/g,
+                        /(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\([^)]*\\)\\s*=>/g,
+                        /(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s*)?\\w+\\s*=>/g,
+                    ];
+                    
+                    const scriptFunctions = [];
+                    for (const pattern of funcPatterns) {
+                        let funcMatch;
+                        while ((funcMatch = pattern.exec(content)) !== null) {
+                            scriptFunctions.push(funcMatch[1]);
+                        }
+                    }
+                    
+                    const htmlPart = code.replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, '');
+                    const usedInHTML = scriptFunctions.filter(fn => {
+                        const regex = new RegExp('\\\\b' + fn + '\\\\s*\\\\(', 'g');
+                        return regex.test(htmlPart);
+                    });
+                    
+                    scriptConfig.reservedNames = [
+                        ...(config.reservedNames || []),
+                        ...usedInHTML
+                    ];
+                    
+                    const result = JavaScriptObfuscator.obfuscate(content, scriptConfig);
+                    return '<script' + attributes + '>' + result.getObfuscatedCode() + '<\\/script>';
+                } catch (err) {
+                    return match;
+                }
+            });
+
+            self.postMessage({ success: true, code: updatedHTML });
+        } else {
+            const config = getConfig(options.preset, code, false);
+            const result = JavaScriptObfuscator.obfuscate(code, config);
+            self.postMessage({ success: true, code: result.getObfuscatedCode() });
+        }
+
+    } catch (err) {
+        self.postMessage({ success: false, error: "Error: " + err.message });
+    }
+};
+`;
+
+const workerBlob = new Blob([workerCode], { type: "application/javascript" });
+const workerURL = URL.createObjectURL(workerBlob);
+const worker = new Worker(workerURL);
 
 const inputArea = document.getElementById("input");
 const outputArea = document.getElementById("output");
-const loading = document.getElementById("loading");
+const status = document.getElementById("status");
+const statusText = document.getElementById("statusText");
+const warningBox = document.getElementById("warningBox");
+const warningText = document.getElementById("warningText");
+const obfuscateBtn = document.getElementById("obfuscateBtn");
 
+// Update character counts
+inputArea.addEventListener("input", updateInputStats);
+function updateInputStats() {
+    document.getElementById("inputStats").textContent = 
+        `${inputArea.value.length.toLocaleString()} characters`;
+}
+
+function updateOutputStats() {
+    document.getElementById("outputStats").textContent = 
+        `${outputArea.value.length.toLocaleString()} characters`;
+}
+
+// File upload handler
 document.getElementById("fileInput").addEventListener("change", function(e) {
     const file = e.target.files[0];
     if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = function(event) {
         inputArea.value = event.target.result;
+        updateInputStats();
     };
     reader.readAsText(file);
 });
 
+// Warning checks
+document.getElementById("selfDefending").addEventListener("change", checkWarnings);
+document.getElementById("debugProtection").addEventListener("change", checkWarnings);
+
+function checkWarnings() {
+    const warnings = [];
+    
+    if (document.getElementById("selfDefending").checked) {
+        warnings.push("Self Defending may break code if reformatted or minified after obfuscation.");
+    }
+    if (document.getElementById("debugProtection").checked) {
+        warnings.push("Debug Protection can freeze browsers with DevTools open.");
+    }
+    
+    if (warnings.length > 0) {
+        warningBox.style.display = "block";
+        warningText.textContent = warnings.join(" ");
+    } else {
+        warningBox.style.display = "none";
+    }
+}
+
+function showStatus(type, message) {
+    status.className = "status " + type;
+    statusText.textContent = message;
+    status.style.display = type === "loading" ? "flex" : "block";
+}
+
+function hideStatus() {
+    status.style.display = "none";
+}
+
 function startObfuscation() {
     const code = inputArea.value;
     if (!code.trim()) {
-        alert("Provide JS code first.");
+        showStatus("error", "Please provide JavaScript or HTML code first.");
         return;
     }
 
-    loading.style.display = "block";
+    obfuscateBtn.disabled = true;
+    showStatus("loading", "Obfuscating code...");
 
     const options = {
         preset: document.getElementById("preset").value,
         stringArray: document.getElementById("stringArray").checked,
         controlFlow: document.getElementById("controlFlow").checked,
         deadCode: document.getElementById("deadCode").checked,
-        selfDefending: document.getElementById("selfDefending").checked
+        selfDefending: document.getElementById("selfDefending").checked,
+        debugProtection: document.getElementById("debugProtection").checked,
+        disableConsole: document.getElementById("disableConsole").checked
     };
 
     worker.postMessage({ code, options });
 }
 
 worker.onmessage = function(e) {
-    loading.style.display = "none";
-    outputArea.value = e.data;
+    obfuscateBtn.disabled = false;
+    
+    if (e.data.success) {
+        outputArea.value = e.data.code;
+        updateOutputStats();
+        
+        const ratio = ((outputArea.value.length / inputArea.value.length) * 100).toFixed(0);
+        showStatus("success", `✅ Obfuscation complete! Output size: ${ratio}% of original`);
+        
+        setTimeout(hideStatus, 3000);
+    } else {
+        showStatus("error", e.data.error);
+    }
 };
 
+worker.onerror = function(e) {
+    obfuscateBtn.disabled = false;
+    showStatus("error", "Worker error: " + e.message);
+};
+
+function clearAll() {
+    inputArea.value = "";
+    outputArea.value = "";
+    updateInputStats();
+    updateOutputStats();
+    hideStatus();
+}
+
+function copyToClipboard() {
+    if (!outputArea.value) {
+        showStatus("error", "No output to copy!");
+        return;
+    }
+    
+    navigator.clipboard.writeText(outputArea.value).then(() => {
+        showStatus("success", "📋 Copied to clipboard!");
+        setTimeout(hideStatus, 2000);
+    }).catch(() => {
+        outputArea.select();
+        document.execCommand("copy");
+        showStatus("success", "📋 Copied to clipboard!");
+        setTimeout(hideStatus, 2000);
+    });
+}
+
 function downloadFile() {
-    const blob = new Blob([outputArea.value], { type: "text/javascript" });
+    if (!outputArea.value) {
+        showStatus("error", "No output to download!");
+        return;
+    }
+    
+    const isHTML = outputArea.value.trim().startsWith("<!") || 
+                   outputArea.value.trim().startsWith("<html");
+    const ext = isHTML ? "html" : "js";
+    const type = isHTML ? "text/html" : "text/javascript";
+    
+    const blob = new Blob([outputArea.value], { type });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "obfuscated.js";
+    a.download = `obfuscated.${ext}`;
     a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function testCode() {
+    const code = outputArea.value;
+    if (!code) {
+        showStatus("error", "No output to test!");
+        return;
+    }
+    
+    try {
+        // For pure JS, try to parse it
+        if (!code.includes("<script")) {
+            new Function(code);
+            showStatus("success", "✅ JavaScript syntax is valid!");
+        } else {
+            // For HTML, open in new window
+            const newWindow = window.open();
+            newWindow.document.write(code);
+            newWindow.document.close();
+            showStatus("success", "✅ Opened in new window for testing");
+        }
+        setTimeout(hideStatus, 3000);
+    } catch (err) {
+        showStatus("error", "❌ Syntax error: " + err.message);
+    }
 }
 </script>
 
