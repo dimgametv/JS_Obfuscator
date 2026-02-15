@@ -4,73 +4,59 @@ self.onmessage = function (e) {
     let { code, options } = e.data;
 
     try {
-
         code = code.replace(/^\uFEFF/, "");
+
         const isLarge = code.length > 500000;
 
-        function getConfig(preset) {
+        let config = {
+            compact: true,
+            target: "browser",
+            ignoreImports: true
+        };
 
-            let config = {
-                compact: true,
-                target: "browser",
-                ignoreImports: true,
-                stringArray: true,
-                stringArrayEncoding: ["base64"],
-                stringArrayThreshold: 0.75,
-                renameGlobals: false,
-                simplify: true,
-                numbersToExpressions: true,
-                splitStrings: true,
-                splitStringsChunkLength: 10
-            };
-
-            if (preset === "medium") {
-                config.controlFlowFlattening = true;
-                config.controlFlowFlatteningThreshold = 0.5;
-            }
-
-            if (preset === "heavy") {
-                config.controlFlowFlattening = true;
-                config.controlFlowFlatteningThreshold = 1;
-
-                // 🔐 FULL ANTI-TAMPER SETTINGS
-                config.deadCodeInjection = true;
-                config.deadCodeInjectionThreshold = 0.4;
-
-                config.selfDefending = true;              // Anti-modification
-                config.debugProtection = true;            // DevTools detection
-                config.debugProtectionInterval = 4000;    // Re-check every 4s
-                config.disableConsoleOutput = true;       // Disable console
-
-                config.transformObjectKeys = true;
-                config.stringArrayRotate = true;
-                config.stringArrayShuffle = true;
-            }
-
-            // Large file safety (same logic as desktop)
-            if (isLarge) {
-                config.deadCodeInjection = false;
-                config.selfDefending = false;
-                config.debugProtection = false;
-            }
-
-            return config;
+        // Presets
+        if (options.preset === "medium") {
+            config.controlFlowFlattening = true;
         }
 
-        const config = getConfig(options.preset);
+        if (options.preset === "heavy") {
+            config.controlFlowFlattening = true;
+            config.deadCodeInjection = true;
+        }
 
+        // Manual toggles
+        if (options.stringArray) config.stringArray = true;
+        if (options.controlFlow) config.controlFlowFlattening = true;
+        if (options.deadCode) config.deadCodeInjection = true;
+        if (options.selfDefending) config.selfDefending = true;
+
+        // Large file safety
+        if (isLarge) {
+            config.deadCodeInjection = false;
+            config.selfDefending = false;
+        }
+
+        // Detect script blocks
         const scriptRegex = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 
         if (scriptRegex.test(code)) {
 
-            const updatedHTML = code.replace(scriptRegex, (match, attributes, content) => {
+            const updatedHTML = code.replace(scriptRegex, function (match, attributes, content) {
 
-                if (/src\s*=/i.test(attributes)) return match;
-
-                if (/type\s*=\s*["']?(application\/json|application\/ld\+json)/i.test(attributes))
+                // Skip external scripts
+                if (/src\s*=/i.test(attributes)) {
                     return match;
+                }
 
-                if (!content.trim()) return match;
+                // Skip JSON or non-JS types
+                if (/type\s*=\s*["']?(application\/json|application\/ld\+json)/i.test(attributes)) {
+                    return match;
+                }
+
+                // Skip empty scripts
+                if (!content.trim()) {
+                    return match;
+                }
 
                 try {
                     const result = JavaScriptObfuscator.obfuscate(content, config);
@@ -81,14 +67,14 @@ self.onmessage = function (e) {
             });
 
             self.postMessage(updatedHTML);
-        }
-        else {
-            const result = JavaScriptObfuscator.obfuscate(code, config);
-            self.postMessage(result.getObfuscatedCode());
+            return;
         }
 
-    }
-    catch (err) {
+        // If pure JS
+        const result = JavaScriptObfuscator.obfuscate(code, config);
+        self.postMessage(result.getObfuscatedCode());
+
+    } catch (err) {
         self.postMessage("Error: " + err.message);
     }
 };
